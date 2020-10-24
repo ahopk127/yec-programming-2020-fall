@@ -13,14 +13,18 @@ An extra surrounding border is included."""
     def from_file(f):
         """Gets a Board from a file object."""
         virus = f.readlines()
+        squares = []
+
         for line in virus:
-          temp = []
-        for character in line:
-          if character == ".":
-            temp.append(Square.UNINHABITED)
-          elif character == "O":
-            temp.append(Square.INFECTED)
-        squares.append(temp)
+            temp = []
+            for character in line:
+                if character == ".":
+                    temp.append(Square.UNINHABITED)
+                elif character == "O":
+                    temp.append(Square.INFECTED)
+            squares.append(temp)
+
+        return Board(squares)
 
     def __init__(self, squares):
         """Gets the Board.
@@ -33,11 +37,14 @@ of Square objects."""
         """Returns the CURRENT status of square with row row and column col."""
         return self.squares[row][col]
 
-    def size(self):
+    def size(self, include_border=True):
         """Returns the size of the board.
 
 The returned value is a 2-element tuple (# rows, # columns)."""
-        return (len(self.squares), len(self.squares[0]))
+        if include_border:
+            return (len(self.squares), len(self.squares[0]))
+        else:
+            return (len(self.squares) - 2, len(self.squares[0]) - 2)
 
     def next_status(self, row, col):
         """Returns the status of square [row, col] in the next turn."""

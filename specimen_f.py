@@ -1,5 +1,15 @@
 from enum import Enum
 
+# In the example for Part3, the outside of the testing grounds is not considered
+# otherwise, a breach would occur at 4 hours (before the example ends!)
+# and there would be more fission mass
+# Setting BORDER_ENABLED to False simulates this
+BORDER_ENABLED = True
+
+# limit for how many hours to simulate
+SIMULATION_LIMIT = 10000
+
+# Possible states for a grid square
 class Square(Enum):
     UNINHABITED = 0
     INFECTED = 1
@@ -29,6 +39,12 @@ An extra surrounding border is included."""
                     temp.append(Square.UNINHABITED)
                 elif character == "O":
                     temp.append(Square.INFECTED)
+                elif character == "M":
+                    temp.append(Square.FISSION)
+                elif character == "Y":
+                    temp.append(Square.TOWER)
+                elif character == "+":
+                    temp.append(Square.LIQUID)
 
             # add a border on the right
             temp.append(Square.UNINHABITED)
@@ -105,16 +121,20 @@ of Square objects.
         """The testing grounds have been breached if there are any INFECTED
 within the border region."""
 
+        if not BORDER_ENABLED:
+            # when BORDER_ENABLED is false, breaches are disabled
+            return False
+
         size = self.size()
 
-        # test border rows (top and bottom)
+        # test border rows (top and bottom), column by column
         for col in range(size[1]):
             if self.status(0, col) == Square.INFECTED:
                 return True
             if self.status(size[0] - 1, col) == Square.INFECTED:
                 return True
 
-        # test border columns
+        # test border columns (leftmost and rightmost), row by row
         for row in range(size[0]):
             if self.status(row, 0) == Square.INFECTED:
                 return True
@@ -154,6 +174,10 @@ The returned value is a 2-element tuple (# rows, # columns)."""
             if r < 0 or r >= self.size()[0]:
                 continue
 
+            # check for invalid row in non-BORDER_ENABLED mode
+            if not BORDER_ENABLED and (r < 1 or r >= self.size()[0] - 1):
+                continue
+
             for c in range(col - 1, col + 2):
                 if r == row and c == col:
                     # don't count the square itself, only the neighbours
@@ -163,6 +187,10 @@ The returned value is a 2-element tuple (# rows, # columns)."""
                 elif c < 0 or c >= self.size()[1]:
                     continue
 
+                # check for invalid column in non-BORDER_ENABLED mode
+                if not BORDER_ENABLED and (c < 1 or c >= self.size()[1] - 1):
+                    continue
+
                 if self.status(r, c) == Square.INFECTED:
                     infected += 1
         return infected
@@ -170,23 +198,27 @@ The returned value is a 2-element tuple (# rows, # columns)."""
     def _tower_neighbours(self, row, col):
         """Returns the number of TOWER neighbours, excluding diagonals."""
         towers = 0
+
+        # check each of the four neighbours individually
         if row > 0 and self.status(row - 1, col) == Square.TOWER:
-            towers += 1
+            if BORDER_ENABLED or row != 1: # don't count border rows if
+                                           # BORDER_ENABLED is false
+                towers += 1
         elif col > 0 and self.status(row, col - 1) == Square.TOWER:
-            towers += 1
+            if BORDER_ENABLED or col != 1:
+                towers += 1
         elif (row < self.size()[0] - 1
               and self.status(row + 1, col) == Square.TOWER):
-            towers += 1
+            if BORDER_ENABLED or row != self.size()[0] - 2:
+                towers += 1
         elif (col < self.size()[1] - 1
               and self.status(row, col + 1) == Square.TOWER):
-            towers += 1
+            if BORDER_ENABLED or row != self.size()[1] - 2:
+                towers += 1
         return towers
 
-    def next_status(self, row, col):
-        """Returns the status of square [row, col] in the next turn."""
-
-        # Check all of the squares around and count the # of infected
-        infected = self._infected_neighbours(row, col)
+    def next_status_tower(self, row, col):
+        """Returns the status of square [row, col] after towers do their thing."""
 
         # check direct neighbours for tower/liquid stuff
         towers = self._tower_neighbours(row, col)
@@ -195,12 +227,23 @@ The returned value is a 2-element tuple (# rows, # columns)."""
         state = self.status(row, col)
 
         # tower-related code
-        # runs after the virus has died/reproduced
         if towers:
             if state == Square.UNINHABITED:
-                state = Square.LIQUID
+                return Square.LIQUID # towers created liquid
             elif state == Square.INFECTED:
-                state = Square.UNINHABITED
+                return Square.UNINHABITED # towers killed virus
+
+        # towers didn't do anything
+        return state
+
+    def next_status_infection(self, row, col):
+        """Returns the status of square [row, col] in the next turn."""
+
+        # Check all of the squares around and count the # of infected
+        infected = self._infected_neighbours(row, col)
+
+        # get current state
+        state = self.status(row, col)
 
         # use the number of infected neighbours to find next state
         # if square is INFECTED and has <3 infected neighbours it will become
@@ -229,32 +272,36 @@ The returned value is a 2-element tuple (# rows, # columns)."""
 
         # because we don't want to modify anything, make a new array
         # and set the new states there
-        new_squares = []
+
+        # squares after towers
+        new_squares_towers = []
 
         for r in range(self.size()[0]):
             row = []
             for c in range(self.size()[1]):
-                row.append(self.next_status(r, c))
-            new_squares.append(row)
+                row.append(self.next_status_tower(r, c))
+            new_squares_towers.append(row)
 
-        self.squares = new_squares
+        self.squares = new_squares_towers
+
+        # squares after infection
+        new_squares_infection = []
+
+        for r in range(self.size()[0]):
+            row = []
+            for c in range(self.size()[1]):
+                row.append(self.next_status_infection(r, c))
+            new_squares_infection.append(row)
+
+        self.squares = new_squares_infection
 
     def updated(self):
         """Updates the board, setting every square to its next state.
 
 Returns an updated version of this board.  This board is not changed."""
-
-        # because we don't want to modify anything, make a new array
-        # and set the new states there
-        new_squares = []
-
-        for r in range(self.size()[0]):
-            row = []
-            for c in range(self.size()[1]):
-                row.append(self.next_status(r, c))
-            new_squares.append(row)
-
-        return Board(new_squares, self.fission)
+        board = Board(self.squares, self.fission)
+        board.update()
+        return board
 
 
 class ExitStatus(Enum):
@@ -323,7 +370,7 @@ If "verbose" is true, outputs extra information."""
                 print("Current Board State:")
                 print(current_board)
 
-        if hour > 10000: # if 10000 hours pass, assume stuck
+        if hour >= SIMULATION_LIMIT: # if 10000 hours pass, assume stuck
             return (hour, ExitStatus.STUCK, current_board)
 
 def run_file(filename, verbose=True, fission=True):

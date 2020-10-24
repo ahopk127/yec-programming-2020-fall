@@ -7,7 +7,8 @@ from enum import Enum
 BORDER_ENABLED = True
 
 # limit for how many hours to simulate
-SIMULATION_LIMIT = 10000
+# 0 = no limit
+SIMULATION_LIMIT = 0
 
 # Possible states for a grid square
 class Square(Enum):
@@ -66,6 +67,10 @@ of Square objects.
 "fission" is whether or not the fission-mass mechanic is supported."""
         self.squares = squares
         self.fission = fission
+
+    def __eq__(self, other):
+        """Returns true if this == other."""
+        return self.squares == other.squares and self.fission == other.fission
 
     def __repr__(self, include_border=False):
         row_start = 0 if include_border else 1
@@ -350,7 +355,6 @@ If "verbose" is true, outputs extra information."""
         # simulate board and update hour
         hour += 4
         current_board = current_board.updated()
-        past_boards.append(current_board)
 
         # determine whether or not to exit
         if current_board.is_breached():
@@ -367,13 +371,26 @@ If "verbose" is true, outputs extra information."""
                 print("Current Board State:")
                 print(current_board)
             return (hour, ExitStatus.DEAD, current_board)
+
+        # look for stuck board
+        # if this state has already happened, we know it's in a loop
+        # because the rules only depend on the previous state
+        elif current_board in past_boards:
+            if verbose:
+                print("Hour: {}, virus is stuck in a loop.".format(hour))
+                print("Current Board State:")
+                print(current_board)
+            return (hour, ExitStatus.STUCK, current_board)
         else:
             if verbose:
                 print("Hour: {}".format(hour))
                 print("Current Board State:")
                 print(current_board)
 
-        if hour >= SIMULATION_LIMIT: # if 10000 hours pass, assume stuck
+        past_boards.append(current_board)
+
+        # if simulation limit is passed, assume stuck
+        if SIMULATION_LIMIT > 0 and hour >= SIMULATION_LIMIT: 
             return (hour, ExitStatus.STUCK, current_board)
 
 def run_file(filename, verbose=True, fission=True):

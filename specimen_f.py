@@ -13,7 +13,7 @@ class Board:
 An extra surrounding border is included."""
 
     @staticmethod
-    def from_file(f):
+    def from_file(f, fission=True):
         """Gets a Board from a file object."""
         virus = f.readlines()
         squares = []
@@ -40,7 +40,7 @@ An extra surrounding border is included."""
         squares.insert(0, [Square.UNINHABITED] * row_length)
         squares.append([Square.UNINHABITED] * row_length)
 
-        return Board(squares)
+        return Board(squares, fission)
 
     def __init__(self, squares, fission=True):
         """Gets the Board.
@@ -191,27 +191,38 @@ The returned value is a 2-element tuple (# rows, # columns)."""
         # check direct neighbours for tower/liquid stuff
         towers = _tower_neighbours(self, row, col)
 
+        # get current state
+        state = self.status(row, col)
+
+        # tower-related code
+        # runs after the virus has died/reproduced
+        if towers:
+            if state == Square.UNINHABITED:
+                state = Square.LIQUID
+            elif state == Square.INFECTED:
+                state = Square.UNINHABITED
+
         # use the number of infected neighbours to find next state
         # if square is INFECTED and has <3 infected neighbours it will become
         # UNINHABITED.
         # if square is UNINHABITED and has >= 3 infected neighbours it will
         # become INFECTED.
-        if self.status(row, col) == Square.UNINHABITED:
+        if state == Square.UNINHABITED:
             if infected >= 3:
-                return Square.INFECTED # new infection
+                state = Square.INFECTED # new infection
             else:
-                return Square.UNINHABITED # no change
-        elif self.status(row, col) == Square.INFECTED:
+                state = Square.UNINHABITED # no change
+        elif state == Square.INFECTED:
             if infected < 3:
-                return Square.UNINHABITED # death
+                state = Square.UNINHABITED # death
             elif infected >= 8 and self.fission:
-                return Square.FISSION # becomes fission mass
+                state = Square.FISSION # becomes fission mass
             else:
-                return Square.INFECTED # no change
-        elif self.status(row, col) == Square.FISSION:
-            return Square.FISSION # fission masses don't change
-        else: # should not be able to happen, throw error
-            assert False
+                state = Square.INFECTED # no change
+        else: # fission, tower and liquid are all permanent - do nothing
+            pass
+
+        return state
 
     def update(self):
         """Updates the board, setting every square to its next state."""
@@ -290,8 +301,10 @@ For example, if the board breaches at 20 hours, returns
         if hour > 10000:
             return
 
-def run_file(filename):
-    """Gets a board from filename filename, runs it, then makes an output file."""
+def run_file(filename, fission=True):
+    """Gets a board from filename filename, runs it, then makes an output file.
+
+"fission" represents whether or not fission is enabled."""
     # load file
     f = open(filename, "r")
     b = Board.from_file(f)

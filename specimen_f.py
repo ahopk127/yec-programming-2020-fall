@@ -259,7 +259,10 @@ def run_file(filename):
     # output - replace "filename.txt" with "filename(Solution).txt"
     output_filename = filename[:-4] + "(Solution).txt"
     of = open(output_filename, 'w')
-    of.write(repr(final_board))
+    if status == ExitStatus.BREACH:
+        of.write(repr(final_board))
+    else:
+        of.write("GG")
     of.close()
 
 def run_and_output(board):

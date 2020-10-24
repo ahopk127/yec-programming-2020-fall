@@ -12,7 +12,15 @@ An extra surrounding border is included."""
     @staticmethod
     def from_file(f):
         """Gets a Board from a file object."""
-        pass # TODO implement me
+        virus = f.readlines()
+        for line in virus:
+          temp = []
+        for character in line:
+          if character == ".":
+            temp.append(Square.UNINHABITED)
+          elif character == "O":
+            temp.append(Square.INFECTED)
+        squares.append(temp)
 
     def __init__(self, squares):
         """Gets the Board.

@@ -3,6 +3,9 @@ from enum import Enum
 class Square(Enum):
     UNINHABITED = 0
     INFECTED = 1
+    FISSION = 2
+    TOWER = 3 # there is a corrosive tower here
+    LIQUID = 4 # there is corrosive liquid here
 
 class Board:
     """A board for the challenge.  Indices 1-x are used for the board.

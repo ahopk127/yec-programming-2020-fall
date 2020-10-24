@@ -367,7 +367,6 @@ If "verbose" is true, outputs extra information."""
                 print("Current Board State:")
                 print(current_board)
             return (hour, ExitStatus.DEAD, current_board)
-        # TODO test for stuck board
         else:
             if verbose:
                 print("Hour: {}".format(hour))

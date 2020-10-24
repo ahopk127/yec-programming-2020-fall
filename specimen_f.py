@@ -89,4 +89,15 @@ The returned value is a 2-element tuple (# rows, # columns)."""
 
     def update(self):
         """Updates the board, setting every square to its next state."""
-        pass # TODO implement me
+
+        # because we don't want to modify anything, make a new array
+        # and set the new states there
+        new_squares = []
+
+        for r in this.size()[0]:
+            row = []
+            for c in this.size()[1]:
+                row.append(self.next_status(r, c))
+            new_squares.append(row)
+
+        self.squares = new_squares

@@ -174,11 +174,11 @@ The returned value is a 2-element tuple (# rows, # columns)."""
             towers += 1
         elif col > 0 and self.status(row, col - 1) == Square.TOWER:
             towers += 1
-        elif row < self.size()[0] - 1 \\
-             and self.status(row + 1, col) == Square.TOWER:
+        elif (row < self.size()[0] - 1
+              and self.status(row + 1, col) == Square.TOWER):
             towers += 1
-        elif col < self.size()[1] - 1 \\
-             and self.status(row, col + 1) == Square.TOWER:
+        elif (col < self.size()[1] - 1
+              and self.status(row, col + 1) == Square.TOWER):
             towers += 1
         return towers
 
@@ -186,10 +186,10 @@ The returned value is a 2-element tuple (# rows, # columns)."""
         """Returns the status of square [row, col] in the next turn."""
 
         # Check all of the squares around and count the # of infected
-        infected = _infected_neighbours(self, row, col)
+        infected = self._infected_neighbours(row, col)
 
         # check direct neighbours for tower/liquid stuff
-        towers = _tower_neighbours(self, row, col)
+        towers = self._tower_neighbours(row, col)
 
         # get current state
         state = self.status(row, col)
@@ -254,7 +254,7 @@ Returns an updated version of this board.  This board is not changed."""
                 row.append(self.next_status(r, c))
             new_squares.append(row)
 
-        return Board(new_squares)
+        return Board(new_squares, self.fission)
 
 
 class ExitStatus(Enum):
@@ -263,14 +263,16 @@ class ExitStatus(Enum):
     DEAD = 1      # the virus has died out
     STUCK = 2     # the virus will never breach the grounds, but is not dead
 
-def run(board):
+def run(board, verbose=True):
     """Simulates the lifetime of the virus on board.
 
 Returns a tuple containing three values: the last hour simulated, the exit status
 , and the final board.
 
 For example, if the board breaches at 20 hours, returns
-(20, ExitStatus.BREACH, [final board])."""
+(20, ExitStatus.BREACH, [final board]).
+
+If "verbose" is true, outputs extra information."""
 
     # store all past states - this will be useful later
     past_boards = []
@@ -279,6 +281,16 @@ For example, if the board breaches at 20 hours, returns
 
     current_board = board # board at current hour
     hour = 0
+
+    # print initial info
+    if verbose:
+        if board.fission:
+            print("Fission is ENABLED")
+        else:
+            print("Fission is DISABLED")
+        print("Hour: {}".format(hour))
+        print("Current Board State:")
+        print(current_board)
 
     # incase the initial board is already breached
     if board.is_breached():
@@ -293,32 +305,51 @@ For example, if the board breaches at 20 hours, returns
 
         # determine whether or not to exit
         if current_board.is_breached():
+            if verbose:
+                print("Hour: {}, breach has occurred.".format(hour))
+                print("Current Board State:")
+                print(current_board)
             return (hour, ExitStatus.BREACH, current_board)
         elif current_board.is_dead():
+            if verbose:
+                print("Hour: {}, virus has died off.".format(hour))
+                print("Current Board State:")
+                print(current_board)
             return (hour, ExitStatus.DEAD, current_board)
         # TODO test for stuck board
+        else:
+            if verbose:
+                print("Hour: {}".format(hour))
+                print("Current Board State:")
+                print(current_board)
 
-        if hour > 10000:
-            return
+        if hour > 10000: # if 10000 hours pass, assume stuck
+            return (hour, ExitStatus.STUCK, current_board)
 
-def run_file(filename, fission=True):
+def run_file(filename, verbose=True, fission=True):
     """Gets a board from filename filename, runs it, then makes an output file.
 
+"verbose", if true, outputs verbose information to standard output.
 "fission" represents whether or not fission is enabled."""
     # load file
     f = open(filename, "r")
-    b = Board.from_file(f)
+    b = Board.from_file(f, fission)
     f.close()
 
     # simulate
-    hour, status, final_board = run(b)
+    hour, status, final_board = run(b, verbose)
 
     # output - replace "filename.txt" with "filename(Solution).txt"
     output_filename = filename[:-4] + "(Solution).txt"
     of = open(output_filename, 'w')
+
     if status == ExitStatus.BREACH:
+        if verbose:
+            print("Wrote final state to", output_filename)
         of.write(repr(final_board))
     else:
+        if verbose:
+            print("Wrote \"GG\" to", output_filename)
         of.write("GG")
     of.close()
 

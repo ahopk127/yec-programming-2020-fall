@@ -45,26 +45,67 @@ An extra surrounding border is included."""
 "squares" is the array of squares in the board.  It should be a rectangular array
 of Square objects."""
         self.squares = squares
-    def __repr__(self, include_border=False):
-        row_start = size(False)[0]
-        row_end = size(True)[0] - 1
 
-        column_start = size(False)[1]
-        column_end = size(True)[1] - 1
+    def __repr__(self, include_border=False):
+        row_start = 0 if include_border else 1
+        row_end = self.size(True)[0] - 1
+
+        column_start = 0 if include_border else 1
+        column_end = self.size(True)[1] - 1
 
         txt = ""
-        for y in range(row_start, row_end):
-            for x in range(column_start, column_end):
-                if self.status(x, y) == Square.UNINHABITED:
+        for r in range(row_start, row_end):
+            for c in range(column_start, column_end):
+                if self.status(r, c) == Square.UNINHABITED:
+                    txt += ".,"
+                elif self.status(r, c) == Square.INFECTED:
+                    txt += "O,"
+            txt += "\n"
+        return txt
+
+    def __str__(self, include_border=False):
+        row_start = 0 if include_border else 1
+        row_end = self.size(True)[0] - 1
+
+        column_start = 0 if include_border else 1
+        column_end = self.size(True)[1] - 1
+
+        txt = ""
+        for r in range(row_start, row_end):
+            for c in range(column_start, column_end):
+                if self.status(r, c) == Square.UNINHABITED:
                     txt += "."
-                elif self.status(x, y) == Square.INFECTED:
+                elif self.status(r, c) == Square.INFECTED:
                     txt += "O"
             txt += "\n"
-        return txt 
-    
+        return txt
+
     def status(self, row, col):
         """Returns the CURRENT status of square with row row and column col."""
         return self.squares[row][col]
+
+    def is_breached(self):
+        """The testing grounds have been breached if there are any INFECTED
+within the border region."""
+
+        size = self.size()
+
+        # test border rows (top and bottom)
+        for col in range(size[1]):
+            if self.status(0, col) == Square.INFECTED:
+                return True
+            if self.status(size[0] - 1, col) == Square.INFECTED:
+                return True
+
+        # test border columns
+        for row in range(size[0]):
+            if self.status(row, 0) == Square.INFECTED:
+                return True
+            if self.status(row, size[1] - 1) == Square.INFECTED:
+                return True
+
+        # if we get here, no breach has been found
+        return False
 
     def size(self, include_border=True):
         """Returns the size of the board.
@@ -83,7 +124,7 @@ The returned value is a 2-element tuple (# rows, # columns)."""
         for r in range(row - 1, row + 2):
 
             # check for invalid row, if row is invalid continue
-            if r < 0 or r >= self.size[0]:
+            if r < 0 or r >= self.size()[0]:
                 continue
 
             for c in range(col - 1, col + 2):
@@ -92,7 +133,7 @@ The returned value is a 2-element tuple (# rows, # columns)."""
                     continue
 
                 # check for invalid column, if col is invalid continue
-                elif c < 0 or r >= self.size[1]:
+                elif c < 0 or c >= self.size()[1]:
                     continue
 
                 if self.status(r, c) == Square.INFECTED:
@@ -123,9 +164,9 @@ The returned value is a 2-element tuple (# rows, # columns)."""
         # and set the new states there
         new_squares = []
 
-        for r in this.size()[0]:
+        for r in range(self.size()[0]):
             row = []
-            for c in this.size()[1]:
+            for c in range(self.size()[1]):
                 row.append(self.next_status(r, c))
             new_squares.append(row)
 

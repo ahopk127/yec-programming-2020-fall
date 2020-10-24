@@ -42,12 +42,14 @@ An extra surrounding border is included."""
 
         return Board(squares)
 
-    def __init__(self, squares):
+    def __init__(self, squares, fission=True):
         """Gets the Board.
 
 "squares" is the array of squares in the board.  It should be a rectangular array
-of Square objects."""
+of Square objects.
+"fission" is whether or not the fission-mass mechanic is supported."""
         self.squares = squares
+        self.fission = fission
 
     def __repr__(self, include_border=False):
         row_start = 0 if include_border else 1
@@ -63,6 +65,12 @@ of Square objects."""
                     txt += ".,"
                 elif self.status(r, c) == Square.INFECTED:
                     txt += "O,"
+                elif self.status(r, c) == Square.FISSION:
+                    txt += "M,"
+                elif self.status(r, c) == Square.TOWER:
+                    txt += "Y,"
+                elif self.status(r, c) == Square.LIQUID:
+                    txt += "+,"
             txt += "\n"
         return txt
 
@@ -80,6 +88,12 @@ of Square objects."""
                     txt += "."
                 elif self.status(r, c) == Square.INFECTED:
                     txt += "O"
+                elif self.status(r, c) == Square.FISSION:
+                    txt += "M"
+                elif self.status(r, c) == Square.TOWER:
+                    txt += "Y"
+                elif self.status(r, c) == Square.LIQUID:
+                    txt += "+"
             txt += "\n"
         return txt
 

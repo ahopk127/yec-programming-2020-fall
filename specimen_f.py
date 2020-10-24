@@ -145,10 +145,8 @@ The returned value is a 2-element tuple (# rows, # columns)."""
         else:
             return (len(self.squares) - 2, len(self.squares[0]) - 2)
 
-    def next_status(self, row, col):
-        """Returns the status of square [row, col] in the next turn."""
-
-        # Check all of the squares around and count the # of infected
+    def _infected_neighbours(self, row, col):
+        """Returns the number of INFECTED neighbours."""
         infected = 0
         for r in range(row - 1, row + 2):
 
@@ -167,6 +165,31 @@ The returned value is a 2-element tuple (# rows, # columns)."""
 
                 if self.status(r, c) == Square.INFECTED:
                     infected += 1
+        return infected
+
+    def _tower_neighbours(self, row, col):
+        """Returns the number of TOWER neighbours, excluding diagonals."""
+        towers = 0
+        if row > 0 and self.status(row - 1, col) == Square.TOWER:
+            towers += 1
+        elif col > 0 and self.status(row, col - 1) == Square.TOWER:
+            towers += 1
+        elif row < self.size()[0] - 1 \\
+             and self.status(row + 1, col) == Square.TOWER:
+            towers += 1
+        elif col < self.size()[1] - 1 \\
+             and self.status(row, col + 1) == Square.TOWER:
+            towers += 1
+        return towers
+
+    def next_status(self, row, col):
+        """Returns the status of square [row, col] in the next turn."""
+
+        # Check all of the squares around and count the # of infected
+        infected = _infected_neighbours(self, row, col)
+
+        # check direct neighbours for tower/liquid stuff
+        towers = _tower_neighbours(self, row, col)
 
         # use the number of infected neighbours to find next state
         # if square is INFECTED and has <3 infected neighbours it will become
@@ -181,8 +204,12 @@ The returned value is a 2-element tuple (# rows, # columns)."""
         elif self.status(row, col) == Square.INFECTED:
             if infected < 3:
                 return Square.UNINHABITED # death
+            elif infected >= 8 and self.fission:
+                return Square.FISSION # becomes fission mass
             else:
                 return Square.INFECTED # no change
+        elif self.status(row, col) == Square.FISSION:
+            return Square.FISSION # fission masses don't change
         else: # should not be able to happen, throw error
             assert False
 

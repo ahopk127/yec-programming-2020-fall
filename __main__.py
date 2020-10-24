@@ -2,4 +2,5 @@ from pprint import *
 from specimen_f import *
 
 filename = input("Enter input filename: ")
-run_file(filename, True, False)
+fission = input("Enable fission? [Y/N] ").capitalize().startswith('Y')
+run_file(filename, True, fission)

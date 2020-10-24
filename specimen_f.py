@@ -45,7 +45,23 @@ An extra surrounding border is included."""
 "squares" is the array of squares in the board.  It should be a rectangular array
 of Square objects."""
         self.squares = squares
+    def __repr__(self, include_border=False):
+        row_start = size(False)[0]
+        row_end = size(True)[0] - 1
 
+        column_start = size(False)[1]
+        column_end = size(True)[1] - 1
+
+        txt = ""
+        for y in range(row_start, row_end):
+            for x in range(column_start, column_end):
+                if self.status(x, y) == Square.UNINHABITED:
+                    txt += "."
+                elif self.status(x, y) == Square.INFECTED:
+                    txt += "O"
+            txt += "\n"
+        return txt 
+    
     def status(self, row, col):
         """Returns the CURRENT status of square with row row and column col."""
         return self.squares[row][col]

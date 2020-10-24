@@ -119,7 +119,9 @@ of Square objects.
 
     def is_breached(self):
         """The testing grounds have been breached if there are any INFECTED
-within the border region."""
+within the border region.
+
+If there is a breach, returns the coordinates of the breach."""
 
         if not BORDER_ENABLED:
             # when BORDER_ENABLED is false, breaches are disabled
@@ -130,16 +132,16 @@ within the border region."""
         # test border rows (top and bottom), column by column
         for col in range(size[1]):
             if self.status(0, col) == Square.INFECTED:
-                return True
+                return (0, col)
             if self.status(size[0] - 1, col) == Square.INFECTED:
-                return True
+                return (size[0] - 1, col)
 
         # test border columns (leftmost and rightmost), row by row
         for row in range(size[0]):
             if self.status(row, 0) == Square.INFECTED:
-                return True
+                return (row, 0)
             if self.status(row, size[1] - 1) == Square.INFECTED:
-                return True
+                return (row, size[1] - 1)
 
         # if we get here, no breach has been found
         return False
@@ -352,8 +354,10 @@ If "verbose" is true, outputs extra information."""
 
         # determine whether or not to exit
         if current_board.is_breached():
+            breach = current_board.is_breached()
             if verbose:
-                print("Hour: {}, breach has occurred.".format(hour))
+                print("Hour: {}, breach has occurred at row {}, col {}.".format(
+                    hour, breach[0] - 1, breach[1] - 1))
                 print("Current Board State:")
                 print(current_board)
             return (hour, ExitStatus.BREACH, current_board)
@@ -409,3 +413,9 @@ def run_and_output(board):
         print("The virus died off after {} hours".format(hour))
     print("Final board:")
     print(final_board)
+
+# Testing/execution code
+if __name__ == "__main__":
+    filename = input("Enter input filename: ")
+    fission = input("Enable fission? [Y/N] ").capitalize().startswith('Y')
+    run_file(filename, True, fission)

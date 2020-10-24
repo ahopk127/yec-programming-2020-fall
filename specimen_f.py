@@ -107,6 +107,18 @@ within the border region."""
         # if we get here, no breach has been found
         return False
 
+    def is_dead(self):
+        """Returns true if there are no INFECTED squares on the board."""
+        size = self.size()
+
+        # test squares one-by-one
+        for r in range(size[0]):
+            for c in range(size[1]):
+                if self.status(r, c) == Square.INFECTED:
+                    return False
+
+        return True
+
     def size(self, include_border=True):
         """Returns the size of the board.
 
@@ -171,3 +183,75 @@ The returned value is a 2-element tuple (# rows, # columns)."""
             new_squares.append(row)
 
         self.squares = new_squares
+
+    def updated(self):
+        """Updates the board, setting every square to its next state.
+
+Returns an updated version of this board.  This board is not changed."""
+
+        # because we don't want to modify anything, make a new array
+        # and set the new states there
+        new_squares = []
+
+        for r in range(self.size()[0]):
+            row = []
+            for c in range(self.size()[1]):
+                row.append(self.next_status(r, c))
+            new_squares.append(row)
+
+        return Board(new_squares)
+
+
+class ExitStatus(Enum):
+    """A possible exit status for the run() method."""
+    BREACH = 0    # the virus has breached the grounds
+    DEAD = 1      # the virus has died out
+    STUCK = 2     # the virus will never breach the grounds, but is not dead
+
+def run(board):
+    """Simulates the lifetime of the virus on board.
+
+Returns a tuple containing three values: the last hour simulated, the exit status
+, and the final board.
+
+For example, if the board breaches at 20 hours, returns
+(20, ExitStatus.BREACH, [final board])."""
+
+    # store all past states - this will be useful later
+    past_boards = []
+
+    past_boards.append(board)
+
+    current_board = board # board at current hour
+    hour = 0
+
+    # incase the initial board is already breached
+    if board.is_breached():
+        return (0, ExitStatus.BREACH, board)
+
+    # simulate hours
+    while True:
+        # simulate board and update hour
+        hour += 4
+        current_board = current_board.updated()
+        past_boards.append(current_board)
+
+        # determine whether or not to exit
+        if current_board.is_breached():
+            return (hour, ExitStatus.BREACH, current_board)
+        elif current_board.is_dead():
+            return (hour, ExitStatus.DEAD, current_board)
+        # TODO test for stuck board
+
+        if hour > 10000:
+            return
+
+def run_and_output(board):
+    """Runs and prints human-readable output"""
+    hour, status, final_board = run(board)
+    if status == ExitStatus.BREACH:
+        print("A breach occured after {} hours".format(hour))
+    elif status == ExitStatus.DEAD:
+        print("The virus died off after {} hours".format(hour))
+    print("Final board:")
+    print(final_board)

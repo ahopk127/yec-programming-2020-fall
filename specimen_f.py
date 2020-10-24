@@ -14,15 +14,28 @@ An extra surrounding border is included."""
         """Gets a Board from a file object."""
         virus = f.readlines()
         squares = []
+        row_length = 0
 
         for line in virus:
-            temp = []
+            # add a border on the left
+            temp = [Square.UNINHABITED]
+
+            # read characters one at a time
             for character in line:
                 if character == ".":
                     temp.append(Square.UNINHABITED)
                 elif character == "O":
                     temp.append(Square.INFECTED)
+
+            # add a border on the right
+            temp.append(Square.UNINHABITED)
+
+            row_length = len(temp)
             squares.append(temp)
+
+        # add border on the top and bottom
+        squares.insert(0, [Square.UNINHABITED] * row_length)
+        squares.append([Square.UNINHABITED] * row_length)
 
         return Board(squares)
 

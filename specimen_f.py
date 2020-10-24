@@ -246,6 +246,22 @@ For example, if the board breaches at 20 hours, returns
         if hour > 10000:
             return
 
+def run_file(filename):
+    """Gets a board from filename filename, runs it, then makes an output file."""
+    # load file
+    f = open(filename, "r")
+    b = Board.from_file(f)
+    f.close()
+
+    # simulate
+    hour, status, final_board = run(b)
+
+    # output - replace "filename.txt" with "filename(Solution).txt"
+    output_filename = filename[:-4] + "(Solution).txt"
+    of = open(output_filename, 'w')
+    of.write(repr(final_board))
+    of.close()
+
 def run_and_output(board):
     """Runs and prints human-readable output"""
     hour, status, final_board = run(board)
